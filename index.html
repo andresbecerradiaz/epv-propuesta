@@ -1134,14 +1134,19 @@ class Fila {
     this.medir();
     sec.querySelectorAll(".fila__nav button").forEach(b=>b.addEventListener("click",()=>this.paso(+b.dataset.dir)));
     this.caja.addEventListener("pointerdown",e=>{this.arrastre=true;this.ini=e.clientX;this.base=this.x;this.movido=0;
+      this.objetivo=e.target.closest(".pieza");
       this.caja.classList.add("arrastrando");this.caja.setPointerCapture(e.pointerId);});
     this.caja.addEventListener("pointermove",e=>{ if(!this.arrastre)return;
       const d=e.clientX-this.ini; this.movido=Math.max(this.movido,Math.abs(d));
       this.x=this.base+d; this.meta=this.x; this.aplicar(); });
-    const fin=()=>{ if(this.arrastre){this.arrastre=false;this.caja.classList.remove("arrastrando");} };
-    this.caja.addEventListener("pointerup",fin); this.caja.addEventListener("pointercancel",fin);
-    this.caja.addEventListener("click",e=>{ const b=e.target.closest(".pieza");
-      if(b && this.movido<6) verFicha(+b.dataset.i); });
+    const fin=(abrirla)=>{ if(this.arrastre){this.arrastre=false;this.caja.classList.remove("arrastrando");}
+      const o=this.objetivo; this.objetivo=null;
+      if(abrirla && o && this.movido<6) verFicha(+o.dataset.i); };
+    this.caja.addEventListener("pointerup",()=>fin(true));
+    this.caja.addEventListener("pointercancel",()=>fin(false));
+    /* teclado: Enter/Espacio sobre la pieza */
+    this.caja.addEventListener("keydown",e=>{ const b=e.target.closest(".pieza");
+      if(b && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); verFicha(+b.dataset.i); } });
   }
   medir(){
     const n=this.piezas.length; if(!n) return;
@@ -1276,6 +1281,7 @@ document.getElementById("form-contacto").addEventListener("submit", e => {
 .fila.arrastrando{cursor:grabbing}
 .fila__pista{display:flex;align-items:center;gap:44px;padding:26px 0 76px;will-change:transform;touch-action:pan-y}
 .pieza{all:unset;position:relative;flex:0 0 auto;cursor:pointer}
+.pieza:focus-visible{outline:3px solid var(--naranjo);outline-offset:6px;border-radius:20px}
 .pieza__img{display:block;width:196px;aspect-ratio:4/5;object-fit:cover;border-radius:18px;background:#111;
   box-shadow:0 12px 26px rgba(60,35,10,.13);transition:box-shadow .5s ease}
 .pieza.is-center .pieza__img{box-shadow:0 20px 44px rgba(60,35,10,.22)}
