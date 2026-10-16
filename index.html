@@ -1054,7 +1054,17 @@ function cerrarPop(){
     reventando = false;
   }, 1500);
 }
-setTimeout(() => { if (!pop.open) abrir(pop); }, 1200);
+const YA_VISTO = "epv_pop_inauguracion";
+let popVisto = false;
+try { popVisto = sessionStorage.getItem(YA_VISTO) === "1"; } catch (e) { popVisto = false; }
+if (!popVisto) {
+  setTimeout(() => {
+    if (!pop.open) {
+      abrir(pop);
+      try { sessionStorage.setItem(YA_VISTO, "1"); } catch (e) {}
+    }
+  }, 1200);
+}
 velo.addEventListener("click", () => { cerrarPop(); cerrar(visor); });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !velo.hidden) { cerrarPop(); cerrar(visor); } });
 document.getElementById("pop-cerrar").addEventListener("click", cerrarPop);
