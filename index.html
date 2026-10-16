@@ -1115,13 +1115,19 @@ const pieza = (x,i) => `<button type="button" class="pieza" data-i="${i}" style=
 galeria.innerHTML = GRUPOS.map(g => {
   const dentro = fotos.map((x,i)=>[x,i]).filter(([x])=>x.c===g.c);
   const base = dentro.map(([x,i])=>pieza(x,i)).join("");
-  const loop = dentro.length >= 4;
-  return `<section class="grupo${g.tono}" data-cat="${g.c}" data-loop="${loop?1:0}" aria-labelledby="grupo-${g.c}">
+  const loop = dentro.length >= 2;
+  // se repite el juego completo hasta cubrir varias pantallas: el giro no termina nunca
+  const anchoPieza = window.innerWidth<=860 ? 201 : 269;
+  const copias = loop ? Math.min(14, Math.max(2, Math.ceil(window.innerWidth*2.2/(dentro.length*anchoPieza))+1)) : 1;
+  const letras = "uvwxyzabcdefgh";
+  let tira = base;
+  for(let r=1;r<copias;r++) tira += base.replace(/mk-t(\d+)/g, "mk-"+letras[r-1]+"$1");
+  return `<section class="grupo${g.tono}" data-cat="${g.c}" data-loop="${loop?1:0}" data-set="${dentro.length}" aria-labelledby="grupo-${g.c}">
     <div class="fila__top">
       <h3 class="grupo__titulo aparece" id="grupo-${g.c}">${g.t}</h3>
       <div class="fila__nav"><button type="button" data-dir="-1" aria-label="Anterior">&#8249;</button><button type="button" data-dir="1" aria-label="Siguiente">&#8250;</button></div>
     </div>
-    <div class="fila"><div class="fila__pista">${base}${loop?base.replace(/mk-t(\d+)/g,"mk-u$1"):""}</div></div>
+    <div class="fila"><div class="fila__pista">${tira}</div></div>
   </section>`;
 }).join("");
 
@@ -1129,7 +1135,7 @@ galeria.innerHTML = GRUPOS.map(g => {
 class Fila {
   constructor(sec){
     this.sec=sec; this.caja=sec.querySelector(".fila"); this.pista=sec.querySelector(".fila__pista");
-    this.piezas=[...this.pista.children]; this.loop=sec.dataset.loop==="1";
+    this.piezas=[...this.pista.children]; this.loop=sec.dataset.loop==="1"; this.set=+sec.dataset.set||1;
     this.x=0; this.meta=0; this.arrastre=false; this.ini=0; this.base=0; this.movido=0;
     this.pausa=false; this.hover=null; this.objetivo=null;
     this.medir();
@@ -1169,7 +1175,7 @@ class Fila {
     this.ancho=vw;
     const ult=this.piezas[n-1];
     this.largo=ult.offsetLeft+ult.offsetWidth;
-    this.ciclo=this.loop ? (this.piezas[n/2|0].offsetLeft - this.piezas[0].offsetLeft) : 0;
+    this.ciclo=this.loop ? (this.piezas[this.set].offsetLeft - this.piezas[0].offsetLeft) : 0;
     this.sec.querySelector(".fila__nav").hidden = !this.loop && this.largo+this.sangria<=this.ancho+4;
     this.aplicar();
   }
@@ -1182,21 +1188,22 @@ class Fila {
     this.pista.style.transform="translate3d("+this.x.toFixed(1)+"px,0,0)";
     const fijo = !this.loop && this.largo+this.sangria<=this.ancho+4;
     const cx = fijo ? (this.largo+this.sangria)/2 : this.ancho/2;
+    const sola=this.sec.classList.contains("fila--sola");
     let mejor=null, md=1e9;
     for(const p of this.piezas){
       const c=this.x+p.offsetLeft+p.offsetWidth/2;
       const im=p.firstElementChild.nextElementSibling||p.querySelector(".pieza__img");
       if(c<-340||c>this.ancho+340){ if(im)im.style.transform=""; p.classList.remove("is-center"); continue; }
       const d=Math.abs(c-cx);
-      const k = (p===this.hover) ? 1 : Math.max(0,1-d/(this.ancho*0.26));
-      const zoom = this.ancho<860 ? 0.18 : 0.14;
+      const k = (sola || p===this.hover) ? 1 : Math.max(0,1-d/(this.ancho*0.26));
+      const zoom = sola ? 0 : (this.ancho<860 ? 0.18 : 0.14);
       const rot=parseFloat(p.style.getPropertyValue("--rot"))||0;
       if(im)im.style.transform="rotate("+(rot*(1-k*0.92)).toFixed(2)+"deg) scale("+(1+k*zoom).toFixed(3)+")";
       p.style.zIndex=Math.round(k*10)+1;
       if(d<md){md=d;mejor=p;}
     }
     for(const p of this.piezas) p.classList.toggle("is-center", p===mejor);
-    if(this.ancho<860) this.dibujar(mejor);
+    if(sola || this.ancho<860) this.dibujar(mejor);
   }
   tic(dt){
     if(this.arrastre){ this.aplicar(); return; }
@@ -1305,10 +1312,14 @@ document.getElementById("form-contacto").addEventListener("submit", e => {
 .fila{position:relative;overflow:hidden;cursor:grab}
 .fila--sola .fila__pista{justify-content:center;cursor:default}
 .fila--sola .fila{cursor:default}
-.fila--sola .pieza{width:300px}
+.fila--sola .pieza{width:min(420px,34vw)}
+.fila--sola .pieza__tag{opacity:1}
+.fila--sola .pieza__tag .flc{width:92px;height:79px;margin-bottom:-15px}
+.fila--sola .pieza__nom{font-size:1.5rem}
+.fila--sola .fila__pista{padding-top:136px}
 .fila.arrastrando{cursor:grabbing}
 .fila__pista{display:flex;align-items:flex-end;gap:44px;padding:126px 0 30px;will-change:transform;touch-action:pan-y}
-.pieza{all:unset;display:block;position:relative;flex:0 0 auto;width:196px;cursor:pointer}
+.pieza{all:unset;display:block;position:relative;flex:0 0 auto;width:225px;cursor:pointer}
 .pieza:focus-visible{outline:3px solid var(--naranjo);outline-offset:6px;border-radius:20px}
 .pieza__img{display:block;width:100%;aspect-ratio:4/5;transform-origin:center bottom;object-fit:cover;border-radius:18px;background:#111;
   box-shadow:0 12px 26px rgba(60,35,10,.13);transition:box-shadow .45s ease}
@@ -1374,8 +1385,11 @@ document.getElementById("form-contacto").addEventListener("submit", e => {
 
 @media (max-width:860px){
   .fila__pista{gap:26px;padding:108px 0 26px;align-items:flex-end}
-  .pieza{width:152px}
-  .fila--sola .pieza{width:min(66vw,260px)}
+  .pieza{width:175px}
+  .fila--sola .pieza{width:min(70vw,280px)}
+  .fila--sola .pieza__tag .flc{width:72px;height:62px;margin-bottom:-12px}
+  .fila--sola .pieza__nom{font-size:1.08rem}
+  .fila--sola .fila__pista{padding-top:120px}
   /* en móvil no hay hover: la etiqueta la lleva la que está al frente */
   .pieza__tag{bottom:calc(100% + 52px)}
   .pieza:hover .pieza__tag{opacity:0}
