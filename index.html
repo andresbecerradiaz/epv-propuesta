@@ -1180,8 +1180,9 @@ class Fila {
     const vw=document.documentElement.clientWidth;
     this.caja.style.marginLeft=(-this.sangria)+"px";
     this.caja.style.width=vw+"px";
-    this.pista.style.paddingLeft=this.sangria+"px";
-    this.pista.style.paddingRight=this.sangria+"px";
+    const sang = this.loop ? 0 : this.sangria;   // en bucle la cinta va pegada al borde, sin hueco
+    this.pista.style.paddingLeft=sang+"px";
+    this.pista.style.paddingRight=sang+"px";
     this.ancho=vw;
     const ult=this.piezas[n-1];
     this.largo=ult.offsetLeft+ult.offsetWidth;
@@ -1193,7 +1194,7 @@ class Fila {
   aplicar(){
     if(this.ciclo>1){ while(this.x<=-this.ciclo){this.x+=this.ciclo;this.meta+=this.ciclo;}
                       while(this.x>0){this.x-=this.ciclo;this.meta-=this.ciclo;} }
-    else { const min=Math.min(0,this.ancho-this.largo-this.sangria);
+    else { const min=Math.min(0,this.ancho-this.largo-(this.loop?0:this.sangria));
            this.x=Math.max(min,Math.min(0,this.x)); this.meta=Math.max(min,Math.min(0,this.meta)); }
     this.pista.style.transform="translate3d("+this.x.toFixed(1)+"px,0,0)";
     const fijo = !this.loop && this.largo+this.sangria<=this.ancho+4;
@@ -1320,7 +1321,7 @@ document.getElementById("form-contacto").addEventListener("submit", e => {
   background:#141414;color:#fff;font-size:1.25rem;line-height:1;transition:background .2s,transform .2s}
 .fila__nav button:hover{background:var(--naranjo);color:#000;transform:translateY(-2px)}
 .fila{position:relative;overflow:hidden;cursor:grab}
-.fila--sola .fila__pista{justify-content:center;cursor:default}
+.fila--sola .fila__pista{justify-content:flex-start;cursor:default}
 .fila--sola .fila{cursor:default}
 .fila--sola .pieza{width:min(420px,34vw)}
 .fila--sola .pieza__tag{opacity:1}
